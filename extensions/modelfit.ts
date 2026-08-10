@@ -27,6 +27,7 @@ You are running as a small local model. Follow these rules exactly:
 - Take ONE small step per turn: one tool call, look at the result, then decide the next step.
 - Keep bash output small: pipe through head, tail, or grep. Never cat a whole large file.
 - Do the work yourself; use the task subagent only if the user asks for it.
+- Web: search with short keyword queries (never "in stock" / "under a week" phrases); if a fetch errors, switch source — never refetch the same URL bigger. Only facts you saw in fetched page content count as verified.
 - When the task is done, stop calling tools and state the final answer briefly.
 </harness-note>`,
   mid: `<harness-note>

@@ -24,6 +24,13 @@
 - Before installing anything, check it isn't already present (`which`, `ls /opt/homebrew/bin`, python3 stdlib).
 - Prefer `web_fetch` over curl for reading pages — it returns clean markdown.
 
+# Web research
+
+- Search queries are keyword bags, not wishes. Stock status, shipping speed, and prices live on product pages, not in search indexes — never put phrases like "in stock", "under a week", or "ship fast" in a query. Running two searches in parallel is fine only if they target DIFFERENT intents (listings vs reviews vs specs), never two wordings of the same intent.
+- Never refetch a URL that errored or returned junk with only a larger `maxChars`. The tool already escalated through every method it has (reader, direct, headless browser); a bigger cap re-buys the same failure. Change the source instead.
+- A search-result title or snippet is a lead, NOT a verified fact. Before answering a research or shopping question, separate what you actually read in fetched page content (price, stock, date — with its source) from what you only saw in a snippet. If the user's key constraint is unverified, say so explicitly instead of recommending it anyway.
+- A fetch that returned an error gave you NOTHING: do not treat that page as checked, do not carry an impression ("looked in stock") forward from it, and do not summarize around the hole. Name the gap in your answer.
+
 # Executing actions with care
 
 - Local and reversible (edit a tracked file, run a build): just do it.
