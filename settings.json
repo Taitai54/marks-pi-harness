@@ -1,0 +1,11 @@
+{
+  "defaultProvider": "lmstudio",
+  "defaultModel": "qwen3.5-122b-a10b",
+  "defaultThinkingLevel": "medium",
+  "compaction": {
+    "enabled": true,
+    "reserveTokens": 24000
+  },
+  "lastChangelogVersion": "0.84.1",
+  "theme": "dark"
+}

@@ -1,0 +1,7 @@
+node_modules/
+sessions/
+auth.json
+trust.json
+models-store.json
+.DS_Store
+handoff/
