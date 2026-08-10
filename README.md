@@ -43,7 +43,7 @@ That is what this harness is. Three layers, all included here:
   <img src="docs/img/architecture.png" alt="Architecture: user to pi agent, extensions + skills + tools, down to LM Studio, verified work loops back" width="85%">
 </p>
 
-pi talks to LM Studio's OpenAI-compatible server on `localhost:1234` (`models.json` defines the provider and three models, including compat quirks like Qwen's chat-template thinking format). Extensions register extra tools and lifecycle hooks. Skills load into context only when the skillrouter detects they are needed, keeping the always-on prompt small, which matters double locally because **LM Studio does no prompt caching**, so every wasted token is reprocessed every single turn.
+pi talks to LM Studio's OpenAI-compatible server on `localhost:1234` (`models.json` defines the provider and four models — including Meta's Muse Glimmer 30B GGUF — with compat quirks like Qwen's chat-template thinking format; `settings.json` scopes the model picker to `lmstudio/*` so hosted-provider catalogs stay out of the way). Extensions register extra tools and lifecycle hooks. Skills load into context only when the skillrouter detects they are needed, keeping the always-on prompt small, which matters double locally because **LM Studio does no prompt caching**, so every wasted token is reprocessed every single turn.
 
 The loop that matters is the coral one: work does not come back to the user until it has been *verified*, which for anything with a UI means the model has literally looked at a screenshot of it.
 
@@ -66,6 +66,7 @@ The loop that matters is the coral one: work does not come back to the user unti
 | [`guard.ts`](extensions/guard.ts) | safety | Regex blocklist for catastrophic commands: disk-level destruction, force pushes, recursive deletes of roots, and friends. |
 | [`watchdog.ts`](extensions/watchdog.ts) | safety | Session watchdog that keeps an eye on runaway behavior. |
 | [`todo.ts`](extensions/todo.ts) | discipline | Todo widget with an enforced rule: exactly one item in_progress at a time, updated the moment a step finishes. |
+| [`clear.ts`](extensions/clear.ts) | quality of life | `/clear` starts a fresh session in place (alias for the built-in `/new`), for muscle memory carried over from other agent CLIs. |
 
 ## The verification loop that changes everything
 
