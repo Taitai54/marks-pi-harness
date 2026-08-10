@@ -34,8 +34,8 @@ A frontier cloud model tolerates a sloppy setup. A local 122B does not. It will 
 That is what this harness is. Three layers, all included here:
 
 - **`AGENTS.md`**, the standing rules. Working style, verification requirements, server discipline, code discipline, and the care rules for destructive actions.
-- **`extensions/`**, 14 TypeScript modules pi loads at startup. They add tools (`browser_check`, `bash_background`, `task`, `web_search`), enforce discipline (gates, freshness, output caps), and adapt to the machine (offline detection, per-model prompt tuning).
-- **`skills/`**, on-demand playbooks. Two of them are complete website-building systems with verified starter templates; two more handle session continuity; two demonstrate the token-saving skill-pack router pattern.
+- **`extensions/`**, 15 TypeScript modules pi loads at startup. They add tools (`browser_check`, `bash_background`, `task`, `web_search`, `facts_recall`), enforce discipline (gates, freshness, output caps, budget awareness), and adapt to the machine (offline detection, per-model prompt tuning).
+- **`skills/`**, on-demand playbooks. Two are complete website-building systems with verified starter templates; one is a round-based deep-research method built for small contexts; two handle session continuity; two demonstrate the token-saving skill-pack router pattern.
 
 ## How it all fits together
 
@@ -57,7 +57,9 @@ The loop that matters is the coral one: work does not come back to the user unti
 | [`netguard.ts`](extensions/netguard.ts) | environment | Detects offline state and blocks installs/fetches with a clear `OFFLINE` signal instead of letting a package manager hang forever. Also applies default bash timeouts. Born from a real 35-minute offline `brew install` hang. |
 | [`compactor.ts`](extensions/compactor.ts) | environment | Caps any single tool result at ~30k chars (~7.5k tokens) and watches context usage against the model's window. Context discipline is survival when there is no prompt caching. |
 | [`modelfit.ts`](extensions/modelfit.ts) | environment | Injects per-model-size prompt notes. Small models get sterner tool-calling guidance because some of them (looking at you, Mistral Small in pi) emit raw `[TOOL_CALLS]` tokens as text and then claim they have no tools. |
-| [`web.ts`](extensions/web.ts) | tools | Search and fetch built to degrade gracefully with zero required keys: Brave (if `BRAVE_API_KEY` exists) → DuckDuckGo html → DDG lite → OpenRouter `:online` as last resort. `web_fetch` goes through the r.jina.ai reader for clean markdown, a huge token saving over raw HTML. |
+| [`web.ts`](extensions/web.ts) | tools | Search and fetch hardened by a live small-model session audit. `web_search` takes an ARRAY of 2-5 different-intent queries fused with reciprocal-rank fusion, a `days` window with real date filtering (Brave `freshness`, HN Algolia, GitHub `created:`, Reddit `t=`; DDG fallthrough gets labeled "unwindowed"), and optional keyless sources (`hn`, `github`, `reddit`). `web_fetch` routes by content type first (YouTube → yt-dlp transcript, GitHub → gh CLI, RSS/Atom → parsed directly), then climbs jina reader → direct fetch → **headless Chrome render**, with content-quality gates (empty/markup output is an explicit ERROR, never a silent success), JSON-LD/og-meta `[structured data]` extraction that pulls price/stock through JS walls, bot-challenge fingerprints, ad-redirect filtering, cross-search URL dedup, and per-URL junk memory that refuses doomed retries. A `goal` param returns goal-relevant excerpts (instant sliding-window filter) instead of the whole page. Zero required keys; everything degrades gracefully. |
+| [`facts.ts`](extensions/facts.ts) | tools | Persistent research memory. A small model with no prompt caching loses page 1 by the time it reads page 6; `facts_add`/`facts_recall`/`facts_seen` fix that with a per-project SQLite store (FTS5) carrying provenance (source URL + verbatim quote + date), three-tier confidence (EXTRACTED/INFERRED/AMBIGUOUS), write-time entity aliasing ("Anthropic" = "Anthropic PBC" forever, no LLM in the loop), corroboration counting, and numeric-contradiction flagging. Facts survive across sessions; `facts_seen` stops the agent re-fetching pages it already mined. |
+| [`budget.ts`](extensions/budget.ts) | discipline | Injects one line per turn: tool calls spent, context %, and the dig-vs-pivot rule (ample budget → dig deeper; low → pivot or commit). Mechanical stall detection: 3+ near-identical tool calls triggers "pivot STRUCTURE, not parameters." Small models burn twenty calls circling one dead lead; a visible countdown turns that judgment into arithmetic. |
 | [`background.ts`](extensions/background.ts) | tools | `bash_background`, `background_status`, `background_kill`. Dev servers and watchers run detached with named logs, because pi's bash tool blocks until exit and a foreground `npm run dev` would hang the session. |
 | [`subagent.ts`](extensions/subagent.ts) | tools | A `task` tool that delegates self-contained grunt work to a faster tier, keeping only the conclusion in the main context. |
 | [`skillrouter.ts`](extensions/skillrouter.ts) | routing | Maps natural phrasing to skills. "Editorial site" routes to editorial-web, "cinematic 3D site" to immersive-web, "wrap up" to handoff, "where were we" to prime. Order matters: the editorial route sits above the immersive route so each genre lands on its own playbook. |
@@ -104,6 +106,10 @@ The second genre: expressive serif display type, soft warm canvases, rounded and
 - [`references/effects.md`](skills/editorial-web/references/effects.md), a ten-recipe effects menu with exact code: magnetic buttons, custom cursor dot, film grain, clip-path reveals, 3D tilt cards, anime.js v4 character cascades, SVG line-draw, scroll progress hairline, count-up stats, velocity skew. Rules: pick 2-4 per site, they must agree with the mood, everything guarded by `prefers-reduced-motion`, console must stay clean.
 
 This is the skill a local 122B has one-shotted complete sites through, twice in a row, with genuinely different design decisions each time.
+
+### `deep-research/`, research that survives a small context
+
+Web research is where raw ReAct history kills small models: by page 6 the model has lost page 1, and its own earlier speculation starts reading like established fact. This skill replaces accumulation with **rounds**. Think (scratch, deliberately discarded), Report (rewritten from scratch each round, the only survivor), Action (one batched search or 1-3 goal-scoped fetches). Verified facts go to the `facts.ts` store; failures go to a binding FAILED ledger so nothing gets retried; a restart protocol rebuilds from (question + latest report) when context climbs. Before answering, a fixed verification checklist runs: every claim traces to fetched content, entities match, dates hold, the user's actual constraint is addressed, and "nothing solid found" is a legitimate answer stated plainly. The round structure is adapted from the 2025-26 deep-research literature (IterResearch/ReSum/RE-TRAC, the parts that work at 27B scale without any training).
 
 ### `handoff/` + `prime/`, session continuity
 
@@ -153,8 +159,11 @@ AGENTS.md                      standing rules, read every session
 settings.json                  pi settings (local default model, compaction reserve)
 models.json                    LM Studio provider + 3 model defs with compat quirks
 design-history.md              append-only no-repeat design registry
-extensions/                    14 TypeScript extensions (see table above)
+extensions/                    15 TypeScript extensions (see table above)
 skills/
+  deep-research/
+    SKILL.md                   round-based research: report rewriting, facts
+                               store, failed ledger, verification checklist
   immersive-web/
     SKILL.md                   archetype picker + build pipeline + verification rules
     references/                archetypes, shaders, scroll choreography, asset
@@ -179,7 +188,8 @@ Not included, on purpose: `auth.json`, `trust.json`, session transcripts, and th
 2. **Run LM Studio** with the local server on `localhost:1234` and a **vision-capable** model loaded (adjust `models.json` to whatever you run; the vision part is what makes `browser_check` sing). Raise LM Studio's default context length in its settings; the stock 8192 will hard-fail against a real system prompt plus a loaded skill.
 3. **Drop this repo's contents into `~/.pi/agent/`.**
 4. **`npm install` inside `~/.pi/agent/`.** That pulls playwright-core for `browser_check`; it drives your existing system Chrome, no browser download.
-5. Optional keys in `~/.env` for nicer web search: `BRAVE_API_KEY`, `JINA_API_KEY`, `OPENROUTER_API_KEY`. Everything degrades gracefully without them.
+5. Optional keys in `~/.env` for nicer web search: `BRAVE_API_KEY` (free tier, the biggest single upgrade, real date filtering and no captcha roulette), `JINA_API_KEY`, `OPENROUTER_API_KEY`. Everything degrades gracefully without them.
+6. Optional binaries for content-type routing: `yt-dlp` (YouTube transcripts) and `gh` (GitHub issues/PRs/repos, uses your existing auth). Without them those URLs just fall through to the normal fetch ladder. Optional `PI_EXTRACT_MODEL` in `~/.env` names a SMALL fast LM Studio model for LLM-grade goal extraction; unset, the instant sliding-window filter is used instead (a reasoning model spends minutes per page, don't point this at one).
 
 Then open a project and ask for an editorial site, and watch a local model check its own work in the mirror until it passes.
 
