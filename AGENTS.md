@@ -26,10 +26,14 @@
 
 # Web research
 
-- Search queries are keyword bags, not wishes. Stock status, shipping speed, and prices live on product pages, not in search indexes — never put phrases like "in stock", "under a week", or "ship fast" in a query. Running two searches in parallel is fine only if they target DIFFERENT intents (listings vs reviews vs specs), never two wordings of the same intent.
-- Never refetch a URL that errored or returned junk with only a larger `maxChars`. The tool already escalated through every method it has (reader, direct, headless browser); a bigger cap re-buys the same failure. Change the source instead.
-- A search-result title or snippet is a lead, NOT a verified fact. Before answering a research or shopping question, separate what you actually read in fetched page content (price, stock, date — with its source) from what you only saw in a snippet. If the user's key constraint is unverified, say so explicitly instead of recommending it anyway.
-- A fetch that returned an error gave you NOTHING: do not treat that page as checked, do not carry an impression ("looked in stock") forward from it, and do not summarize around the hole. Name the gap in your answer.
+- For any research task needing more than two fetches, read `~/.pi/agent/skills/deep-research/SKILL.md` first and follow its round structure.
+- Search queries are keyword bags, not wishes. Stock status, shipping speed, and prices live on product pages, not in search indexes — never put phrases like "in stock", "under a week", "recent", "latest", "news", or year numbers in a query. Recency is the `days` PARAMETER, not a keyword. Prefer ONE web_search call carrying an array of 2-5 DIFFERENT-intent queries (listings vs reviews vs specs) over sequential searches — never two wordings of the same intent.
+- Necessity check before every search: do I already know this (facts_recall), and can search even help? Record clean no-result searches as negative evidence ("no source found stating X") — it prevents re-searching and overclaiming.
+- Success means non-empty CONTENT, never a clean exit code or "the tool ran". An empty result, raw markup, or an error page taught you nothing — do not treat that page as checked or carry an impression ("looked in stock") forward from it. Name the gap in your answer.
+- Never refetch a URL that errored or returned junk with only a larger `maxChars`. The tool already escalated through every method it has (reader, direct, headless browser); a bigger cap re-buys the same failure. Change the source instead. One same-intent retry max.
+- A search-result title or snippet is a lead, NOT a verified fact. Before answering a research or shopping question, separate what you actually read in fetched page content (with its source) from what you only saw in a snippet. If the user's key constraint is unverified, say so explicitly instead of recommending it anyway.
+- During research, pass `goal` to web_fetch (returns goal-relevant verbatim evidence instead of the whole page), check `facts_seen` before fetching, and `facts_add` what you learn (EXTRACTED vs INFERRED, with a verbatim quote). Facts persist across sessions in handoff/research/.
+- Content types with dedicated routes — never scrape these as HTML: YouTube URLs (web_fetch returns transcript via yt-dlp), GitHub repos/issues/PRs (web_fetch uses gh), RSS/Atom feeds (parsed directly). Anonymous Reddit .json endpoints are DEAD (403 since late 2025) — use web_search with sources:["reddit"] instead.
 
 # Executing actions with care
 

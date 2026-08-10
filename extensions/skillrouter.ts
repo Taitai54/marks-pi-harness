@@ -34,6 +34,11 @@ const ROUTES: Array<{ skill: string; path: string; re: RegExp }> = [
     re: /\b(prime|catch\s+me\s+up|where\s+(were|are)\s+we|get\s+up\s+to\s+speed|resume\s+(the\s+)?project|pick\s+up\s+where)\b/i,
   },
   {
+    skill: "deep-research",
+    path: "~/.pi/agent/skills/deep-research/SKILL.md",
+    re: /\b(research\s+(this|the|a|an|into|on|about|\w+)|deep\s+research|find\s+(me\s+)?the\s+best|compare\s+\w+\s+(options|prices|vendors|tools)|look\s+into|investigate|what('s| is| are)\s+the\s+(latest|current|best)\b)/i,
+  },
+  {
     skill: "apify-pack",
     path: "~/.pi/agent/skills/apify-pack/SKILL.md",
     re: /\b(scrape|scraping|scraper|apify|lead\s?gen|find\s+leads|influencers?\b.{0,30}(find|research)|competitor\s+(analysis|research))\b/i,

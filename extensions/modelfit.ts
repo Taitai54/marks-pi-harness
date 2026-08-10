@@ -27,7 +27,7 @@ You are running as a small local model. Follow these rules exactly:
 - Take ONE small step per turn: one tool call, look at the result, then decide the next step.
 - Keep bash output small: pipe through head, tail, or grep. Never cat a whole large file.
 - Do the work yourself; use the task subagent only if the user asks for it.
-- Web: search with short keyword queries (never "in stock" / "under a week" phrases); if a fetch errors, switch source — never refetch the same URL bigger. Only facts you saw in fetched page content count as verified.
+- Web: short keyword queries only (recency = the days parameter, never words like "latest"); batch 2-5 different-intent queries in ONE web_search call. If a fetch errors, switch source — never refetch the same URL bigger. Only facts you saw in fetched page content count as verified; store them with facts_add, check facts_recall/facts_seen before searching or fetching.
 - When the task is done, stop calling tools and state the final answer briefly.
 </harness-note>`,
   mid: `<harness-note>
