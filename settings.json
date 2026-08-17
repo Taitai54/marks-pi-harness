@@ -1,7 +1,7 @@
 {
-  "defaultProvider": "lmstudio",
-  "defaultModel": "qwen/qwen3.6-27b",
-  "enabledModels": ["lmstudio/*"],
+  "defaultProvider": "ollama",
+  "defaultModel": "gemma4:latest",
+  "enabledModels": ["lmstudio/*", "ollama/*"],
   "defaultThinkingLevel": "medium",
   "compaction": {
     "enabled": true,
